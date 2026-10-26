@@ -14,6 +14,10 @@ import { INITIAL_FREQUENT } from '../data/frequent';
 
 const ShoppingContext = createContext();
 const FREQUENT_STORAGE_KEY = '@indkobsliste/frequent';
+// Nyt i iteration 2: selve listen og scannede stregkoder gemmes også,
+// så intet forsvinder når appen lukkes.
+const ITEMS_STORAGE_KEY = '@indkobsliste/items';
+const BARCODES_STORAGE_KEY = '@indkobsliste/barcodes';
 
 function normalizeName(name) {
   return name.trim().toLowerCase();
@@ -65,26 +69,41 @@ function bumpFrequent(list, entries) {
 export function ShoppingProvider({ children }) {
   const [items, setItems] = useState(INITIAL_ITEMS);
   const [frequentItems, setFrequentItems] = useState(INITIAL_FREQUENT);
-  const [frequentReady, setFrequentReady] = useState(false);
+  // Stregkode -> { name, category }. Udfyldes når brugeren scanner en vare,
+  // så næste scanning af samme vare kan genkendes uden internet.
+  const [knownBarcodes, setKnownBarcodes] = useState({});
+  const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
     let active = true;
 
     (async () => {
       try {
-        const raw = await AsyncStorage.getItem(FREQUENT_STORAGE_KEY);
+        const [rawFrequent, rawItems, rawBarcodes] = await Promise.all([
+          AsyncStorage.getItem(FREQUENT_STORAGE_KEY),
+          AsyncStorage.getItem(ITEMS_STORAGE_KEY),
+          AsyncStorage.getItem(BARCODES_STORAGE_KEY),
+        ]);
         if (!active) return;
 
-        if (raw) {
-          const parsed = JSON.parse(raw);
+        if (rawFrequent) {
+          const parsed = JSON.parse(rawFrequent);
           if (Array.isArray(parsed) && parsed.length > 0) {
             setFrequentItems(parsed);
           }
         }
+        if (rawItems) {
+          const parsed = JSON.parse(rawItems);
+          if (Array.isArray(parsed)) setItems(parsed);
+        }
+        if (rawBarcodes) {
+          const parsed = JSON.parse(rawBarcodes);
+          if (parsed && typeof parsed === 'object') setKnownBarcodes(parsed);
+        }
       } catch {
         // behold seed-data hvis lagring fejler
       } finally {
-        if (active) setFrequentReady(true);
+        if (active) setStorageReady(true);
       }
     })();
 
@@ -93,14 +112,37 @@ export function ShoppingProvider({ children }) {
     };
   }, []);
 
+  // Gem først når data er indlæst, ellers overskrives det gemte med tomme lister
   useEffect(() => {
-    if (!frequentReady) return;
-
+    if (!storageReady) return;
     AsyncStorage.setItem(
       FREQUENT_STORAGE_KEY,
       JSON.stringify(frequentItems)
     ).catch(() => {});
-  }, [frequentItems, frequentReady]);
+  }, [frequentItems, storageReady]);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    AsyncStorage.setItem(ITEMS_STORAGE_KEY, JSON.stringify(items)).catch(
+      () => {}
+    );
+  }, [items, storageReady]);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    AsyncStorage.setItem(
+      BARCODES_STORAGE_KEY,
+      JSON.stringify(knownBarcodes)
+    ).catch(() => {});
+  }, [knownBarcodes, storageReady]);
+
+  const rememberBarcode = useCallback((code, name, category) => {
+    if (!code || !name?.trim()) return;
+    setKnownBarcodes((prev) => ({
+      ...prev,
+      [code]: { name: name.trim(), category },
+    }));
+  }, []);
 
   const recordPurchases = useCallback((entries) => {
     if (!entries?.length) return;
@@ -283,6 +325,8 @@ export function ShoppingProvider({ children }) {
         items,
         sections,
         frequentItems,
+        knownBarcodes,
+        rememberBarcode,
         addItem,
         addFromFrequent,
         addManualFrequent,

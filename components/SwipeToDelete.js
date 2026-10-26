@@ -20,7 +20,8 @@ export default function SwipeToDelete({ onDelete, enabled = true, children }) {
       overshootRight={false}
       // Kræver ~hele slettefeltet synligt (~100px) før den snapper og sletter
       rightThreshold={100}
-      dragOffsetFromRightEdge={25}
+      // gesture-handler 3: venstre-swipe angives som negativ værdi
+      dragOffsetFromRight={-25}
       onSwipeableOpen={onDelete}
       renderRightActions={() => <DeleteAction />}
     >

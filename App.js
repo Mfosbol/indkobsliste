@@ -8,6 +8,7 @@ import { ShoppingProvider } from './context/ShoppingContext';
 import ListScreen from './screens/ListScreen';
 import AddScreen from './screens/AddScreen';
 import FrequentScreen from './screens/FrequentScreen';
+import ScannerScreen from './screens/ScannerScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -43,6 +44,8 @@ export default function App() {
                   iconName = focused ? 'add-circle' : 'add-circle-outline';
                 } else if (route.name === 'Ofte købt') {
                   iconName = focused ? 'time' : 'time-outline';
+                } else if (route.name === 'Scan') {
+                  iconName = focused ? 'barcode' : 'barcode-outline';
                 }
 
                 return <Ionicons name={iconName} size={size} color={color} />;
@@ -51,6 +54,7 @@ export default function App() {
           >
             <Tab.Screen name="Liste" component={ListScreen} />
             <Tab.Screen name="Tilføj" component={AddScreen} />
+            <Tab.Screen name="Scan" component={ScannerScreen} />
             <Tab.Screen name="Ofte købt" component={FrequentScreen} />
           </Tab.Navigator>
         </NavigationContainer>

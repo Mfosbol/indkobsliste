@@ -7,7 +7,10 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Indkøbsliste bruger kameraet til at scanne stregkoder på dine varer."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,6 +22,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Indkøbsliste bruger kameraet til at scanne stregkoder på dine varer."
+        }
+      ],
+      "expo-status-bar",
+      "expo-font"
+    ]
   }
 }
